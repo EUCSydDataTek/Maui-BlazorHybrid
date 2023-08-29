@@ -1,0 +1,72 @@
+﻿@page "/todo"
+
+@using Models
+
+<PageTitle>Todo</PageTitle>
+
+<h1>Todo</h1>
+
+<ul>
+    @foreach (var todo in todos)
+    {
+        <li>@todo.Title</li>
+    }
+</ul>
+
+<div class="input-group mb-3">
+    <input type="text" class="form-control" placeholder="Recipient's username" @bind="newTodo">
+    <button class="btn btn-primary" type="button" @onclick="AddTodo">Add todo</button>
+</div>
+
+@if(location != null)
+{
+    <p class="mt-4">Latitude: @location.Latitude</p>
+    <p>Longitude: @location.Longitude</p>
+    <p>Altitude: @location.Altitude</p>
+}
+
+<button class="btn btn-outline-primary" type="button" @onclick="GetCurrentLocation">GeoLocation</button>
+
+@code {
+    private List<TodoItem> todos = new();
+    private string? newTodo;
+
+    private void AddTodo()
+    {
+        if (!string.IsNullOrWhiteSpace(newTodo))
+        {
+            todos.Add(new TodoItem { Title = newTodo });
+            newTodo = string.Empty;
+        }
+    }
+
+    // GeoLocation
+    private CancellationTokenSource _cancelTokenSource;
+    private bool _isCheckingLocation;
+    Location location;
+
+    public async Task GetCurrentLocation()
+    {
+        try
+        {
+            _isCheckingLocation = true;
+            GeolocationRequest request = new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(10));
+            _cancelTokenSource = new CancellationTokenSource();
+            location = await Geolocation.Default.GetLocationAsync(request, _cancelTokenSource.Token);
+            if (location != null)
+            {
+                Console.WriteLine($"Latitude: {location.Latitude}, Longitude: {location.Longitude}, Altitude: {location.Altitude}");
+            }
+        }
+        finally
+        {
+            _isCheckingLocation = false;
+        }
+    }
+
+    public void CancelRequest()
+    {
+        if (_isCheckingLocation && _cancelTokenSource != null && _cancelTokenSource.IsCancellationRequested == false)
+            _cancelTokenSource.Cancel();
+    }
+}
